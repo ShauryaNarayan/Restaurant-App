@@ -86,7 +86,8 @@ const App = () => {
       {/* Header */}
       <header>
         <h1>{restaurantName}</h1>
-        <p>My Orders ({cartCount})</p>
+        <p>My Orders</p>
+        <p>{cartCount}</p>
       </header>
 
       {/* Category Buttons */}
@@ -127,7 +128,9 @@ const App = () => {
                 )}
                 {!dish.dish_Availability && <p>Not available</p>}
 
-                <p>{dishCount[dish.dish_id] || 0}</p>
+                <p>
+                  {dish.dish_Availability ? dishCount[dish.dish_id] || 0 : null}
+                </p>
 
                 {dish.dish_Availability && (
                   <div>
