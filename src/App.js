@@ -99,7 +99,7 @@ const ProtectedRoute = ({component: Component, ...rest}) => {
       {...rest}
       render={props =>
         token === undefined ? (
-          <Redirect to="/login" />
+          <Redirect to='/login' />
         ) : (
           <Component {...props} />
         )
@@ -135,29 +135,29 @@ const Login = props => {
   }
 
   if (Cookies.get('jwt_token') !== undefined) {
-    return <Redirect to="/" />
+    return <Redirect to='/' />
   }
 
   return (
-    <div className="login-container">
+    <div className='login-container'>
       <form onSubmit={submitForm}>
-        <label htmlFor="username">USERNAME</label>
+        <label htmlFor='username'>USERNAME</label>
         <input
-          id="username"
-          type="text"
+          id='username'
+          type='text'
           value={username}
           onChange={e => setUsername(e.target.value)}
         />
 
-        <label htmlFor="password">PASSWORD</label>
+        <label htmlFor='password'>PASSWORD</label>
         <input
-          id="password"
-          type="password"
+          id='password'
+          type='password'
           value={password}
           onChange={e => setPassword(e.target.value)}
         />
 
-        <button type="submit">Login</button>
+        <button type='submit'>Login</button>
         {errorMsg && <p>{errorMsg}</p>}
       </form>
     </div>
@@ -179,12 +179,13 @@ const Header = withRouter(({restaurantName, history}) => {
   const goCart = () => history.push('/cart')
 
   return (
-    <header className="header">
+    <header className='header'>
       <h1 onClick={goHome}>{restaurantName || 'UNI Resto Cafe'}</h1>
 
       <div>
-        <button data-testid="cart" onClick={goCart}>
-          <p>My Orders ({cartList.length})</p>
+        <button data-testid='cart' onClick={goCart}>
+          <p>My Orders</p>
+          <p>{cartList.length}</p>
         </button>
         <button onClick={logout}>Logout</button>
       </div>
@@ -259,7 +260,7 @@ const Home = () => {
     <div>
       <Header restaurantName={restaurant.restaurant_name} />
 
-      <div className="categories-container">
+      <div className='categories-container'>
         {restaurant.table_menu_list.map(cat => (
           <button
             key={cat.menu_category_id}
@@ -270,12 +271,12 @@ const Home = () => {
         ))}
       </div>
 
-      <ul className="dishes-list">
+      <ul className='dishes-list'>
         {activeCat.category_dishes.map(dish => {
           const qty = localQty[dish.dish_id]
 
           return (
-            <li key={dish.dish_id} className="dish-card">
+            <li key={dish.dish_id} className='dish-card'>
               <h1>{dish.dish_name}</h1>
               <p>
                 {dish.dish_currency} {dish.dish_price}
@@ -285,17 +286,16 @@ const Home = () => {
 
               {dish.addonCat?.length > 0 && <p>Customizations available</p>}
               {!dish.dish_Availability && <p>Not available</p>}
-
-              <p>{qty}</p>
+              {dish.dish_Availability && <p>{qty}</p>}
 
               {dish.dish_Availability && (
-                <div className="controls">
+                <div className='controls'>
                   <button onClick={() => decLocal(dish.dish_id)}>-</button>
                   <button onClick={() => incLocal(dish.dish_id)}>+</button>
 
                   {qty > 0 && (
                     <button
-                      className="add-btn"
+                      className='add-btn'
                       onClick={() => onAddToCart(dish)}
                     >
                       ADD TO CART
@@ -307,7 +307,7 @@ const Home = () => {
               <img
                 src={dish.dish_image}
                 alt={dish.dish_name}
-                className="dish-img"
+                className='dish-img'
               />
             </li>
           )
@@ -331,10 +331,10 @@ const Cart = () => {
 
   if (cartList.length === 0) {
     return (
-      <div className="cart-empty-view-container">
+      <div className='cart-empty-view-container'>
         <img
-          src="https://assets.ccbp.in/frontend/react-js/nxt-trendz-empty-cart-img.png"
-          alt="empty cart"
+          src='https://assets.ccbp.in/frontend/react-js/nxt-trendz-empty-cart-img.png'
+          alt='empty cart'
         />
       </div>
     )
@@ -342,17 +342,17 @@ const Cart = () => {
 
   return (
     <div>
-      <Header restaurantName="Cart" />
+      <Header restaurantName='Cart' />
 
       <button onClick={removeAllCartItems}>Remove All</button>
 
-      <ul className="cart-items-list">
+      <ul className='cart-items-list'>
         {cartList.map(item => (
-          <li key={item.dish_id} className="cart-item">
+          <li key={item.dish_id} className='cart-item'>
             <img
               src={item.dish_image}
               alt={item.dish_name}
-              className="cart-item-img"
+              className='cart-item-img'
             />
 
             <h3>{item.dish_name}</h3>
@@ -361,7 +361,7 @@ const Cart = () => {
               {(item.quantity * item.dish_price).toFixed(2)}
             </p>
 
-            <div className="controls">
+            <div className='controls'>
               <button onClick={() => decrementCartItemQuantity(item.dish_id)}>
                 -
               </button>
@@ -389,10 +389,10 @@ const App = () => (
   <BrowserRouter>
     <CartProvider>
       <Switch>
-        <Route exact path="/login" component={withRouter(Login)} />
-        <ProtectedRoute exact path="/" component={Home} />
-        <ProtectedRoute exact path="/cart" component={Cart} />
-        <Redirect to="/login" />
+        <Route exact path='/login' component={withRouter(Login)} />
+        <ProtectedRoute exact path='/' component={Home} />
+        <ProtectedRoute exact path='/cart' component={Cart} />
+        <Redirect to='/login' />
       </Switch>
     </CartProvider>
   </BrowserRouter>
