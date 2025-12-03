@@ -1,23 +1,16 @@
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  createContext,
-  useContext,
-} from 'react'
+import {useState, useEffect, useMemo, createContext, useContext} from 'react'
 import {
   BrowserRouter,
   Switch,
   Route,
   Redirect,
-  useHistory,
   withRouter,
 } from 'react-router-dom'
 import Cookies from 'js-cookie'
 
 /* =========================================================
    CART CONTEXT — REQUIRED FOR TEST CASES
-   ========================================================= */
+========================================================= */
 export const CartContext = createContext({
   cartList: [],
   addCartItem: () => {},
@@ -59,18 +52,22 @@ const CartProvider = ({children}) => {
   const removeAllCartItems = () => setCartList([])
 
   const removeCartItem = id =>
-    setCartList(prev => prev.filter(i => i.dish_id !== id))
+    setCartList(prev => prev.filter(item => item.dish_id !== id))
 
   const incrementCartItemQuantity = id =>
     setCartList(prev =>
-      prev.map(i => (i.dish_id === id ? {...i, quantity: i.quantity + 1} : i)),
+      prev.map(item =>
+        item.dish_id === id ? {...item, quantity: item.quantity + 1} : item,
+      ),
     )
 
   const decrementCartItemQuantity = id =>
     setCartList(prev =>
       prev
-        .map(i => (i.dish_id === id ? {...i, quantity: i.quantity - 1} : i))
-        .filter(i => i.quantity > 0),
+        .map(item =>
+          item.dish_id === id ? {...item, quantity: item.quantity - 1} : item,
+        )
+        .filter(item => item.quantity > 0),
     )
 
   const value = useMemo(
@@ -89,8 +86,8 @@ const CartProvider = ({children}) => {
 }
 
 /* =========================================================
-   PROTECTED ROUTE 
-   ========================================================= */
+   PROTECTED ROUTE
+========================================================= */
 const ProtectedRoute = ({component: Component, ...rest}) => {
   const token = Cookies.get('jwt_token')
 
@@ -110,7 +107,7 @@ const ProtectedRoute = ({component: Component, ...rest}) => {
 
 /* =========================================================
    LOGIN ROUTE
-   ========================================================= */
+========================================================= */
 const Login = props => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -128,7 +125,8 @@ const Login = props => {
 
     if (res.ok) {
       Cookies.set('jwt_token', data.jwt_token, {expires: 30})
-      props.history.replace('/')
+      const {history} = props
+      history.replace('/')
     } else {
       setErrorMsg(data.error_msg)
     }
@@ -166,7 +164,7 @@ const Login = props => {
 
 /* =========================================================
    HEADER COMPONENT
-   ========================================================= */
+========================================================= */
 const Header = withRouter(({restaurantName, history}) => {
   const {cartList} = useContext(CartContext)
 
@@ -175,52 +173,59 @@ const Header = withRouter(({restaurantName, history}) => {
     history.replace('/login')
   }
 
-  const goHome = () => history.push('/')
-  const goCart = () => history.push('/cart')
-
   return (
     <header className="header">
-      <h1 onClick={goHome}>{restaurantName || 'UNI Resto Cafe'}</h1>
+      <h1 onClick={() => history.push('/')}>
+        {restaurantName || 'UNI Resto Cafe'}
+      </h1>
 
       <div>
-        <button data-testid="cart" onClick={goCart}>
+        <button
+          type="button"
+          data-testid="cart"
+          onClick={() => history.push('/cart')}
+        >
           <p>My Orders</p>
           <p>{cartList.length}</p>
         </button>
-        <button onClick={logout}>Logout</button>
+
+        <button type="button" onClick={logout}>
+          Logout
+        </button>
       </div>
     </header>
   )
 })
 
 /* =========================================================
-   HOME ROUTE — LOCAL QTY PERSISTENCE FIXED ✅
-   ========================================================= */
+   HOME ROUTE
+========================================================= */
 const Home = () => {
   const [restaurant, setRestaurant] = useState(null)
   const [status, setStatus] = useState('LOADING')
   const [activeCategory, setActiveCategory] = useState('')
-  const [localQty, setLocalQty] = useState({}) // ✅ persists on this route
+  const [localQty, setLocalQty] = useState({})
   const {addCartItem} = useContext(CartContext)
 
   useEffect(() => {
-    const getMenu = async () => {
+    const fetchMenu = async () => {
       setStatus('LOADING')
+
       try {
         const res = await fetch(
           'https://apis2.ccbp.in/restaurant-app/restaurant-menu-list-details',
         )
         const data = await res.json()
-        const r = Array.isArray(data) ? data[0] : data
+        const restaurantData = Array.isArray(data) ? data[0] : data
 
-        setRestaurant(r)
-        setActiveCategory(r.table_menu_list[0].menu_category)
+        setRestaurant(restaurantData)
+        setActiveCategory(restaurantData.table_menu_list[0].menu_category)
 
-        // ✅ Initialize all quantities to 0
+        // initialize quantities
         const initialQty = {}
-        r.table_menu_list.forEach(cat =>
-          cat.category_dishes.forEach(d => {
-            initialQty[d.dish_id] = 0
+        restaurantData.table_menu_list.forEach(cat =>
+          cat.category_dishes.forEach(dish => {
+            initialQty[dish.dish_id] = 0
           }),
         )
         setLocalQty(initialQty)
@@ -231,38 +236,35 @@ const Home = () => {
       }
     }
 
-    getMenu()
+    fetchMenu()
   }, [])
 
-  // ✅ Increase quantity locally
   const incLocal = id => setLocalQty(prev => ({...prev, [id]: prev[id] + 1}))
 
-  // ✅ Decrease quantity locally (never delete)
   const decLocal = id =>
     setLocalQty(prev => ({...prev, [id]: Math.max(0, prev[id] - 1)}))
 
-  // ✅ Add to cart WITHOUT resetting local quantity
   const onAddToCart = dish => {
     const qty = localQty[dish.dish_id]
-    if (qty > 0) {
-      addCartItem({...dish, __qtyToAdd: qty})
-    }
+    if (qty > 0) addCartItem({...dish, __qtyToAdd: qty})
   }
 
   if (status === 'LOADING') return <p>Loading...</p>
   if (status === 'FAILURE') return <p>Something went wrong</p>
 
   const activeCat = restaurant.table_menu_list.find(
-    c => c.menu_category === activeCategory,
+    category => category.menu_category === activeCategory,
   )
 
   return (
     <div>
       <Header restaurantName={restaurant.restaurant_name} />
 
+      {/* Category Tabs */}
       <div className="categories-container">
         {restaurant.table_menu_list.map(cat => (
           <button
+            type="button"
             key={cat.menu_category_id}
             onClick={() => setActiveCategory(cat.menu_category)}
           >
@@ -271,6 +273,7 @@ const Home = () => {
         ))}
       </div>
 
+      {/* Dishes List */}
       <ul className="dishes-list">
         {activeCat.category_dishes.map(dish => {
           const qty = localQty[dish.dish_id]
@@ -278,23 +281,32 @@ const Home = () => {
           return (
             <li key={dish.dish_id} className="dish-card">
               <h1>{dish.dish_name}</h1>
+
               <p>
                 {dish.dish_currency} {dish.dish_price}
               </p>
+
               <p>{dish.dish_description}</p>
               <p>{dish.dish_calories} calories</p>
 
               {dish.addonCat?.length > 0 && <p>Customizations available</p>}
+
               {!dish.dish_Availability && <p>Not available</p>}
+
               {dish.dish_Availability && <p>{qty}</p>}
 
               {dish.dish_Availability && (
                 <div className="controls">
-                  <button onClick={() => decLocal(dish.dish_id)}>-</button>
-                  <button onClick={() => incLocal(dish.dish_id)}>+</button>
+                  <button type="button" onClick={() => decLocal(dish.dish_id)}>
+                    -
+                  </button>
+                  <button type="button" onClick={() => incLocal(dish.dish_id)}>
+                    +
+                  </button>
 
                   {qty > 0 && (
                     <button
+                      type="button"
                       className="add-btn"
                       onClick={() => onAddToCart(dish)}
                     >
@@ -319,7 +331,7 @@ const Home = () => {
 
 /* =========================================================
    CART ROUTE
-   ========================================================= */
+========================================================= */
 const Cart = () => {
   const {
     cartList,
@@ -344,7 +356,9 @@ const Cart = () => {
     <div>
       <Header restaurantName="Cart" />
 
-      <button onClick={removeAllCartItems}>Remove All</button>
+      <button type="button" onClick={removeAllCartItems}>
+        Remove All
+      </button>
 
       <ul className="cart-items-list">
         {cartList.map(item => (
@@ -356,22 +370,33 @@ const Cart = () => {
             />
 
             <h3>{item.dish_name}</h3>
+
             <p>
               {item.dish_currency}{' '}
               {(item.quantity * item.dish_price).toFixed(2)}
             </p>
 
             <div className="controls">
-              <button onClick={() => decrementCartItemQuantity(item.dish_id)}>
+              <button
+                type="button"
+                onClick={() => decrementCartItemQuantity(item.dish_id)}
+              >
                 -
               </button>
+
               <p>{item.quantity}</p>
 
-              <button onClick={() => incrementCartItemQuantity(item.dish_id)}>
+              <button
+                type="button"
+                onClick={() => incrementCartItemQuantity(item.dish_id)}
+              >
                 +
               </button>
 
-              <button onClick={() => removeCartItem(item.dish_id)}>
+              <button
+                type="button"
+                onClick={() => removeCartItem(item.dish_id)}
+              >
                 Remove
               </button>
             </div>
@@ -384,7 +409,7 @@ const Cart = () => {
 
 /* =========================================================
    APP (ROUTER)
-   ========================================================= */
+========================================================= */
 const App = () => (
   <BrowserRouter>
     <CartProvider>
